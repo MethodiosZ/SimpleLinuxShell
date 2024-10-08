@@ -4,6 +4,9 @@
 #include <unistd.h>
 #include <string.h>
 
+#define COMMAND_LENGTH 1024
+#define MAX_PARAMS  64
+
 void command_promt(){
     static int new_promt = 1;
     if(new_promt){
@@ -11,7 +14,7 @@ void command_promt(){
         write(STDOUT_FILENO,new_window,12);
         new_promt=0;
     }
-    printf("$");
+    printf("csd4384-hy345sh@user:id");
 }
 
 void read_command(char* command,char** parameters){
@@ -41,14 +44,14 @@ void waitpid(int x,int *status,int y){
 }
 
 int main(int argc,char **argv){
-    char* cmd,*command;
-    char** parameters;
+    char cmd[COMMAND_LENGTH],command[COMMAND_LENGTH];
+    char* parameters[MAX_PARAMS];
     char *envv[] = {(char*)"PATH=/bin",0};
     int status;
     while(1){
         command_promt();
         read_command(command,parameters);
-        int pid = fork();
+        pid_t pid = fork();
         if(pid==0){
             strcpy(cmd,"/bin/");
             strcat(cmd,command);
