@@ -39,9 +39,9 @@ void read_command(char* command,char** parameters){
     parameters[i]=NULL;
 }
 
-void waitpid(int x,int *status,int y){
+/*void waitpid(int x,int *status,int y){
     wait(NULL);
-}
+}*/
 
 int main(int argc,char **argv){
     char cmd[COMMAND_LENGTH],command[COMMAND_LENGTH];
@@ -51,7 +51,7 @@ int main(int argc,char **argv){
     while(1){
         command_promt();
         read_command(command,parameters);
-        pid_t pid = fork();
+        /*pid_t pid = fork();
         if(pid==0){
             strcpy(cmd,"/bin/");
             strcat(cmd,command);
@@ -60,7 +60,7 @@ int main(int argc,char **argv){
             waitpid(-1,&status,0);
         } else {
             printf("Fork not executed successfully!\n");
-        }
+        }*/
         if(strcmp(command,"exit")==0) break;
     }
     return 0;
