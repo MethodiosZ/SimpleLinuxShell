@@ -33,6 +33,7 @@ void read_command(char* command,char** parameters){
         pch = strtok(NULL," \n");
     }
     strcpy(command,array[0]);
+    printf("%s\n",command);
     for(int j=0;j<i;j++){
         parameters[j]  = array[j];
     }
@@ -61,6 +62,7 @@ int main(int argc,char **argv){
         } else {
             printf("Fork not executed successfully!\n");
         }*/
+       printf("%s\n",command);
         if(strcmp(command,"exit")==0) break;
     }
     return 0;
