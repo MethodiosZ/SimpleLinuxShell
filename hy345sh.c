@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-//#include <sys/wait.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <string.h>
 
@@ -10,34 +10,25 @@
 void command_promt(){
     static int new_promt = 1;
     if(new_promt){
-        const char* new_window = " \e[1;1H\e[2j";
-        write(STDOUT_FILENO,new_window,12);
-        new_promt=0;
+      system("clear");
+      new_promt=0;
     }
-    printf("csd4384-hy345sh@user:id");
+    printf("csd4384-hy345sh@user:id ");
 }
 
 void read_command(char* command,char** parameters){
-    char* line,*pch;
-    int count = 0, i = 0, j = 0;
-    char** array;
-    for(;;){
-        int c = fgetc(stdin);
-        line[count++] = (char) c;
-        if(c=='\n') break;
-    }
-    if(count==1) return;
-    pch = strtok(line," \n");
-    while(pch!=NULL){
-        array[i++] = strdup(pch);
-        pch = strtok(NULL," \n");
-    }
-    strcpy(command,array[0]);
-    printf("%s\n",command);
-    for(int j=0;j<i;j++){
-        parameters[j]  = array[j];
-    }
-    parameters[i]=NULL;
+  char* token;
+  int i = 0;
+  if(fgets(command,COMMAND_LENGTH,stdin)==NULL){
+    printf("Failed to read input!\n");
+    exit(EXIT_FAILURE);
+  }
+  token = strtok(command," \t\n");
+  while(token!=NULL && i<MAX_PARAMS-1){
+    parameters[i++]=token;
+    token=strtok(NULL," \t\n");
+  }
+  parameters[i]=NULL;
 }
 
 /*void waitpid(int x,int *status,int y){
@@ -62,8 +53,12 @@ int main(int argc,char **argv){
         } else {
             printf("Fork not executed successfully!\n");
         }*/
-       printf("%s\n",command);
-        if(strcmp(command,"exit")==0) break;
+	int i=0;
+	while(parameters[i]!=NULL){
+	  printf("%s\n",parameters[i]);
+	  i++;
+	}
+	if(strcmp(command,"exit")==0) break;
     }
     return 0;
 }
