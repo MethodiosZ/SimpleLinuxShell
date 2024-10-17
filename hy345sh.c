@@ -18,17 +18,55 @@ void command_promt(){
 
 void read_command(char* command,char** parameters){
   char* token;
-  int i = 0;
+  int i = 0,j=0,length;
+  char** buffer = (char**)malloc(MAX_PARAMS*sizeof(char**));
+  parameters = (char**)malloc(MAX_PARAMS*sizeof(char**));
   if(fgets(command,COMMAND_LENGTH,stdin)==NULL){
     printf("Failed to read input!\n");
     exit(EXIT_FAILURE);
   }
-  token = strtok(command," \t\n");
+  token = strtok(command,";\n");
   while(token!=NULL && i<MAX_PARAMS-1){
     parameters[i++]=token;
-    token=strtok(NULL," \t\n");
+    token=strtok(NULL,";\n");
   }
   parameters[i]=NULL;
+  length=i;
+  i=0;
+  while(parameters[i]!=NULL){
+    if(strstr(parameters[i],"|")!=NULL){
+      token = strtok(parameters[i],"|\n");
+      while(token!=NULL && i+j<MAX_PARAMS-1){
+	buffer[j++]=token;
+	token=strtok(NULL,"|\n");
+      }
+      buffer[j]=NULL;
+    }
+    j=0;
+    if(buffer[j]!=NULL){
+      char** temp = (char**)malloc(length+1*sizeof(char**));
+      int k=i+1,l=0;
+      /* while(parameters[k]!=NULL){
+	temp[l]=parameters[k];
+	l++;
+	k++;
+	}*/
+      k=i;
+      while(buffer[j]!=NULL){
+	parameters[k]=buffer[j];
+	k++;
+	j++;
+      }
+      free(temp);
+    }
+    i++;
+  }
+  free(buffer);
+  i=0;
+  while(parameters[i]!=NULL){
+    printf("%s\n",parameters[i]);
+    i++;
+  }
 }
 
 /*void waitpid(int x,int *status,int y){
@@ -52,12 +90,12 @@ int main(int argc,char **argv){
             waitpid(-1,&status,0);
         } else {
             printf("Fork not executed successfully!\n");
-        }*/
+        }
 	int i=0;
 	while(parameters[i]!=NULL){
 	  printf("%s\n",parameters[i]);
 	  i++;
-	}
+	}*/
 	if(strcmp(command,"exit")==0) break;
     }
     return 0;
