@@ -1,3 +1,5 @@
+//Methodios Zacharioudakis 4384
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/wait.h>
@@ -9,94 +11,115 @@
 
 void command_promt(){
     static int new_promt = 1;
+    char* username;
+    pid_t processid;
+    username = getlogin();
+    processid = getpid();
     if(new_promt){
       system("clear");
       new_promt=0;
     }
-    printf("csd4384-hy345sh@user:id ");
+    printf("csd4384-hy345sh@%s:%d ",username,processid);
 }
 
-void read_command(char* command,char** parameters){
+void parse_command(char* command,char** parameters){
   char* token;
-  int i = 0,j=0,length;
-  char** buffer = (char**)malloc(MAX_PARAMS*sizeof(char**));
-  parameters = (char**)malloc(MAX_PARAMS*sizeof(char**));
-  if(fgets(command,COMMAND_LENGTH,stdin)==NULL){
-    printf("Failed to read input!\n");
-    exit(EXIT_FAILURE);
-  }
-  token = strtok(command,";\n");
+  int i = 0;
+  token = strtok(command," \t\n");
   while(token!=NULL && i<MAX_PARAMS-1){
     parameters[i++]=token;
-    token=strtok(NULL,";\n");
+    token=strtok(NULL," \t\n");
   }
   parameters[i]=NULL;
-  length=i;
-  i=0;
-  while(parameters[i]!=NULL){
-    if(strstr(parameters[i],"|")!=NULL){
-      token = strtok(parameters[i],"|\n");
-      while(token!=NULL && i+j<MAX_PARAMS-1){
-	buffer[j++]=token;
-	token=strtok(NULL,"|\n");
-      }
-      buffer[j]=NULL;
-    }
-    j=0;
-    if(buffer[j]!=NULL){
-      char** temp = (char**)malloc(length+1*sizeof(char**));
-      int k=i+1,l=0;
-      /* while(parameters[k]!=NULL){
-	temp[l]=parameters[k];
-	l++;
-	k++;
-	}*/
-      k=i;
-      while(buffer[j]!=NULL){
-	parameters[k]=buffer[j];
-	k++;
-	j++;
-      }
-      free(temp);
-    }
-    i++;
+}
+
+void execute_pipe(char** arg1,char** arg2){
+  int fd[2];
+  pipe(fd);
+  if(fork()==0){
+    dup2(fd[1],STDOUT_FILENO);
+    close(fd[0]);
+    close(fd[1]);
+    execvp(arg1[0],arg1);
+    exit(EXIT_FAILURE);
   }
-  free(buffer);
-  i=0;
-  while(parameters[i]!=NULL){
-    printf("%s\n",parameters[i]);
-    i++;
+  if(fork()==0){
+    dup2(fd[0],STDIN_FILENO);
+    close(fd[0]);
+    close(fd[1]);
+    execvp(arg2[0],arg2);
+    exit(EXIT_FAILURE);
+  }
+  close(fd[0]);
+  close(fd[1]);
+  wait(NULL);
+  wait(NULL);
+}
+
+void execute_command(char** parameters){
+  pid_t pid = fork();
+  if(pid<0){
+    printf("Fork failed!\n");
+  }  else if(pid==0) {
+    int i,fd;
+    for(i=0;parameters[i]!=NULL;i++){
+      if(strcmp(parameters[i],">")==0){
+	//fd = open(parameters[i+1]);
+	dup2(fd,STDOUT_FILENO);
+	close(fd);
+	parameters[i]=NULL;
+      } else if(strcmp(parameters[i],"<")==0){
+	dup2(fd,STDIN_FILENO);
+	close(fd);
+	parameters[i]=NULL;
+      } else if(strcmp(parameters[i],">>")==0){
+	dup2(fd,STDOUT_FILENO);
+	close(fd);
+	parameters[i]=NULL;
+      }
+    }
+    if(execvp(parameters[0],parameters)==-1){
+      printf("Execution failed!\n");
+      exit(EXIT_FAILURE);
+    }
+  } else wait(NULL);
+  
+}
+
+void parse_pipes(char* cmd){
+  char* params[MAX_PARAMS],*arg1[MAX_PARAMS],*arg2[MAX_PARAMS],*pipe;
+  pipe = strstr(cmd,"|");
+  if(pipe!=NULL){ // searches for pipes in the command and handles them 
+    *pipe='\0';
+    parse_command(cmd,arg1);
+    parse_command(pipe+1,arg2);
+    execute_pipe(arg1,arg2);
+  } else { //parses the non pipe command
+    parse_command(cmd,params);
+    if(params[0]!=NULL) execute_command(params);
   }
 }
 
-/*void waitpid(int x,int *status,int y){
-    wait(NULL);
-}*/
+void execute_multiple_commands(char* command){
+  char* cmd;
+  cmd = strtok(command,";"); //separetes the multiple commands with ; as delimeter
+  while(cmd!=NULL){
+    parse_pipes(cmd); // parses the single command
+    cmd = strtok(NULL,":");
+  }
+}
 
 int main(int argc,char **argv){
-    char cmd[COMMAND_LENGTH],command[COMMAND_LENGTH];
-    char* parameters[MAX_PARAMS];
-    char *envv[] = {(char*)"PATH=/bin",0};
-    int status;
-    while(1){
-        command_promt();
-        read_command(command,parameters);
-        /*pid_t pid = fork();
-        if(pid==0){
-            strcpy(cmd,"/bin/");
-            strcat(cmd,command);
-            execve(cmd,parameters,envv);
-        } else if(pid>0){
-            waitpid(-1,&status,0);
-        } else {
-            printf("Fork not executed successfully!\n");
-        }
-	int i=0;
-	while(parameters[i]!=NULL){
-	  printf("%s\n",parameters[i]);
-	  i++;
-	}*/
-	if(strcmp(command,"exit")==0) break;
+  char command[COMMAND_LENGTH];
+  while(1){
+    command_promt();
+    if(fgets(command,COMMAND_LENGTH,stdin)==NULL){
+      printf("Failed to read input!\n");
+      exit(EXIT_FAILURE);
     }
-    return 0;
+    if(strcmp(command,"exit\n")==0) break; //Stops at exit command
+    if(strstr(command,";")!=NULL) execute_multiple_commands(command); // Handles command that contains multiple commands separated by ;
+    else parse_pipes(command); // parses the single command
+  }
+  return 0;
 }
