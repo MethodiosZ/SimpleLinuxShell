@@ -1,4 +1,4 @@
-//Methodios Zacharioudakis 4384
+//Methodios Zacharioudakis
 
 #include <stdio.h>
 #include <stdlib.h>
